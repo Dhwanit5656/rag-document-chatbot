@@ -9,18 +9,12 @@ An interactive document-based Q&A assistant leveraging **Retrieval-Augmented Gen
 * **Streamlined UI**: Built with **Streamlit** for a clean, user-friendly chat interface.
 
 ### 🛠️ Tech Stack
-* [cite_start]**Frontend**: Streamlit (v1.55.0) 
-* [cite_start]**Orchestration**: LangChain (Core, Community, and Hugging Face integrations) 
-* [cite_start]**Embeddings**: `sentence-transformers/all-MiniLM-L6-v2` 
-* [cite_start]**LLM**: `meta-llama/Llama-3.1-8B-Instruct` (via Hugging Face Endpoint) 
-* [cite_start]**Vector Database**: FAISS (CPU) 
+* **Frontend**: Streamlit (v1.55.0) 
+* **Orchestration**: LangChain (Core, Community, and Hugging Face integrations) 
+* **Embeddings**: `sentence-transformers/all-MiniLM-L6-v2` 
+* **LLM**: `meta-llama/Llama-3.1-8B-Instruct` (via Hugging Face Endpoint) 
+* **Vector Database**: FAISS (CPU) 
 
-### 🚀 Getting Started
 
-#### 1. Prerequisites
-[cite_start]Ensure you have Python installed and a **Hugging Face API Token** ready[cite: 1, 2].
 
-#### 2. Installation
-Clone the repository and install the required dependencies:
-```bash
-pip install -r requirements.txt
+
