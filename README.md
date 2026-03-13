@@ -3,10 +3,10 @@
 An interactive document-based Q&A assistant leveraging **Retrieval-Augmented Generation (RAG)**. [cite_start]This application uses **LangChain** to orchestrate the workflow, **Hugging Face** for embeddings and language models, and **FAISS** for efficient similarity search.
 
 ### 🌟 Features
-* [cite_start]**Multi-format Support**: Upload and process **PDF**, **TXT**, and **DOCX** files.
-* [cite_start]**Persistent Vector Storage**: Local saving of document embeddings using **FAISS** to avoid re-processing existing files.
-* [cite_start]**Advanced Retrieval**: Utilizes **Maximal Marginal Relevance (MMR)** to ensure diverse and relevant information retrieval.
-* [cite_start]**Streamlined UI**: Built with **Streamlit** for a clean, user-friendly chat interface.
+* **Multi-format Support**: Upload and process **PDF**, **TXT**, and **DOCX** files.
+* **Persistent Vector Storage**: Local saving of document embeddings using **FAISS** to avoid re-processing existing files.
+* **Advanced Retrieval**: Utilizes **Maximal Marginal Relevance (MMR)** to ensure diverse and relevant information retrieval.
+* **Streamlined UI**: Built with **Streamlit** for a clean, user-friendly chat interface.
 
 ### 🛠️ Tech Stack
 * [cite_start]**Frontend**: Streamlit (v1.55.0) 
