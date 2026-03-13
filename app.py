@@ -73,7 +73,10 @@ model = ChatHuggingFace(llm=llm)
 
 # GPT-style prompt with Memory placeholder
 contextual_prompt = ChatPromptTemplate.from_messages([
-    ("system", "Answer based on context. If unknown, say 'Not found'.\n\nContext:\n{context}"),
+    ("system", "You are a Helpfull Assistant, 
+    Answer based on context,
+    Nicely wrap up the Answer,
+    If unknown, say 'Not found in Context'.\n\nContext:\n{context}"),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{question}"),
 ])
@@ -125,7 +128,7 @@ if question := st.chat_input("Ask about your documents..."):
             st.markdown(question)
 
         # 3. RAG Chain
-        retriever = st.session_state.vector_db.as_retriever(search_kwargs={"k": 3})
+        retriever = st.session_state.vector_db.as_retriever(search_kwargs={"k": 6,"k_fetch":20,"search_type":'mmr',"lambda_mult": 0.5})
         
         chain = (
             RunnableParallel({
@@ -146,4 +149,5 @@ if question := st.chat_input("Ask about your documents..."):
         
 
         st.session_state.chat_history.append(AIMessage(content=response))
+
 
