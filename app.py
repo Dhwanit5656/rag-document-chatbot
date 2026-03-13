@@ -53,7 +53,7 @@ def load_doc(filepath):
 # -----------------------------
 # Vector Store
 # -----------------------------
-
+@st.cache_resource
 def vector_store(chunks, filename):
 
     embedding_model = HuggingFaceEmbeddings(
@@ -161,4 +161,5 @@ if uploaded_file:
             response = chains.invoke(question)
 
         st.chat_message("user").write(question)
+
         st.chat_message("assistant").write(response)
