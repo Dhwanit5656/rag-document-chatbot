@@ -67,7 +67,7 @@ def get_vectorstore(chunks):
 llm = HuggingFaceEndpoint(
     repo_id="meta-llama/Llama-3.1-8B-Instruct",
     task="text-generation",
-    max_new_tokens=1024
+    max_new_tokens=2098
 )
 model = ChatHuggingFace(llm=llm)
 
@@ -146,6 +146,7 @@ if question := st.chat_input("Ask about your documents..."):
         
 
         st.session_state.chat_history.append(AIMessage(content=response))
+
 
 
 
