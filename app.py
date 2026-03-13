@@ -75,7 +75,7 @@ model = ChatHuggingFace(llm=llm)
 contextual_prompt = ChatPromptTemplate.from_messages([
     ("system", """You are a strict Document Research Assistant. 
     1. Answer the question ONLY using the provided Context. 
-    2. If the answer is not explicitly stated in the context, respond exactly with: "Not found in the document."
+    2. Else say "Not found in the document."
     3. DO NOT use your own external knowledge or provide information not present in the context.
     
     Context:
@@ -150,4 +150,5 @@ if question := st.chat_input("Ask about your documents..."):
                 response = chain.invoke(question)
                 st.markdown(response)
         
+
         st.session_state.chat_history.append(AIMessage(content=response))
