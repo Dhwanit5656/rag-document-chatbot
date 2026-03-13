@@ -73,10 +73,7 @@ model = ChatHuggingFace(llm=llm)
 
 # GPT-style prompt with Memory placeholder
 contextual_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a Helpfull Assistant, 
-    Answer based on context,
-    Nicely wrap up the Answer,
-    If unknown, say 'Not found in Context'.\n\nContext:\n{context}"),
+    ("system", "You are a Helpfull Assistant,Answer based on context,Nicely wrap up the Answer,If unknown, say 'Not found in Context'.\n\nContext:\n{context}"),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{question}"),
 ])
@@ -149,5 +146,6 @@ if question := st.chat_input("Ask about your documents..."):
         
 
         st.session_state.chat_history.append(AIMessage(content=response))
+
 
 
