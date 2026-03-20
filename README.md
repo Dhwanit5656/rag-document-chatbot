@@ -1,4 +1,4 @@
-# 🗣️ Multilingual RAG Chatbot
+# 🗣️ Multilingual-MultiDoc RAG Chatbot
 
 A Retrieval-Augmented Generation (RAG) chatbot that lets you upload documents and ask questions in **Hindi or English**. Built with LangChain, Streamlit, ChromaDB, and a Llama 3.1 backend via HuggingFace.
 
