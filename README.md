@@ -1,132 +1,120 @@
-# 📄 Multi-Document RAG Assistant
+# 🗣️ Multilingual RAG Chatbot
 
-A conversational AI app that lets you upload multiple documents and chat with all of them at once — powered by LangChain, HuggingFace, and Streamlit.
+A Retrieval-Augmented Generation (RAG) chatbot that lets you upload documents and ask questions in **Hindi or English**. Built with LangChain, Streamlit, ChromaDB, and a Llama 3.1 backend via HuggingFace.
 
 ---
 
 ## ✨ Features
 
-- 📁 **Multi-document support** — Upload PDFs, TXTs, and DOCX files simultaneously
-- 🧠 **RAG (Retrieval-Augmented Generation)** — Answers are grounded in your documents
-- 💬 **Persistent chat history** — Maintains conversation context across multiple turns
-- 🔍 **MMR-based retrieval** — Uses Maximal Marginal Relevance for diverse, relevant context chunks
-- ⚡ **Powered by Llama 3.1 8B** — Fast, capable open-source LLM via HuggingFace Inference API
-- 🖥️ **Clean Streamlit UI** — Simple sidebar upload + chat interface
+- 📄 **Multi-document support** — Upload PDF, TXT, and DOCX files
+- 🌐 **Bilingual** — Ask questions and receive answers in Hindi or English (auto-detected)
+- 🔍 **MMR Retrieval** — Uses Maximal Marginal Relevance for diverse, relevant context chunks
+- 🧠 **LLM-powered answers** — Powered by `meta-llama/Llama-3.1-8B-Instruct` via HuggingFace
+- 🗃️ **In-memory vector store** — ChromaDB for fast semantic search
+- 💬 **Chat history** — Persisted within the session with source attribution per response
 
 ---
 
-## 🛠️ Tech Stack
+## 🗂️ Project Structure
 
-| Component | Technology |
-|---|---|
-| Frontend | [Streamlit](https://streamlit.io/) |
-| LLM | `meta-llama/Llama-3.1-8B-Instruct` via HuggingFace |
-| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
-| Vector Store | FAISS (in-memory) |
-| RAG Framework | LangChain |
-| Document Loaders | PyPDFLoader, TextLoader, Docx2txtLoader |
+```
+├── main.py        # Streamlit UI — handles file upload, chat interface, session state
+└── pipeline.py    # Backend — document loading, chunking, embedding, retrieval, LLM inference
+```
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ How It Works
+
+1. **Upload** your documents via the sidebar (PDF, TXT, or DOCX)
+2. **Process** — documents are chunked, language-tagged, and embedded into ChromaDB
+3. **Ask** — type a question in Hindi or English; the language is auto-detected
+4. **Answer** — relevant chunks are retrieved via MMR and passed to Llama 3.1 for a grounded response
+5. **Sources** — each answer shows which document(s) and page(s) it was drawn from
+
+---
+
+## 🚀 Setup & Installation
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/multi-doc-rag-assistant.git
-cd multi-doc-rag-assistant
+git clone <your-repo-url>
+cd <repo-folder>
 ```
 
 ### 2. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install streamlit langchain langchain-huggingface langchain-community \
+            langchain-chroma langchain-text-splitters langdetect \
+            python-dotenv huggingface_hub chromadb pypdf docx2txt
 ```
 
 ### 3. Set up environment variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the project root:
 
 ```env
-HUGGINGFACEHUB_API_TOKEN=your_huggingface_token_here
+HUGGINGFACEHUB_API_TOKEN=your_token_here
 ```
 
-> Get your free API token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+> Get your token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens). You need access to `meta-llama/Llama-3.1-8B-Instruct` — request it [here](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct).
 
 ### 4. Run the app
 
 ```bash
-streamlit run app.py
+streamlit run main.py
 ```
 
 ---
 
-## 📦 Requirements
+## 🧩 Tech Stack
 
-```
-streamlit
-langchain
-langchain-huggingface
-langchain-community
-langchain-text-splitters
-faiss-cpu
-python-dotenv
-pypdf
-docx2txt
-sentence-transformers
-```
+| Component | Library / Model |
+|---|---|
+| UI | Streamlit |
+| LLM | `meta-llama/Llama-3.1-8B-Instruct` (HuggingFace) |
+| Embeddings | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` |
+| Vector Store | ChromaDB |
+| RAG Framework | LangChain |
+| Language Detection | `langdetect` |
+| Document Loaders | PyPDF, Docx2txt, TextLoader |
 
 ---
 
-## 🖼️ Usage
+## 📋 Usage Notes
 
-1. **Upload documents** using the sidebar — supports `.pdf`, `.txt`, and `.docx`
-2. Click **"Process Documents"** to index them into the vector store
-3. **Ask questions** in the chat input at the bottom
-4. The assistant retrieves the most relevant chunks and generates a grounded answer
-
----
-
-## 📁 Project Structure
-
-```
-multi-doc-rag-assistant/
-│
-├── app.py              # Main Streamlit application
-├── .env                # API keys (not committed)
-├── .gitignore
-├── requirements.txt
-└── README.md
-```
+- The vector store is **in-memory** — it resets each time you click **Reset** or restart the app
+- Language detection requires at least ~20 characters to work reliably; shorter inputs default to English
+- The LLM is instructed to answer **only from the provided context** — it will say so if the answer isn't found in the documents
+- Temporary files uploaded through the UI are deleted automatically after processing
 
 ---
 
-## ⚙️ Configuration
+## 🛠️ Configuration
 
-You can tune the following parameters in `app.py` to adjust retrieval behaviour:
+Key parameters you can tune in `pipeline.py`:
 
-| Parameter | Default | Description |
-|---|---|---|
-| `chunk_size` | `500` | Size of each document chunk |
-| `chunk_overlap` | `50` | Overlap between consecutive chunks |
-| `k` | `6` | Number of chunks retrieved per query |
-| `search_type` | `mmr` | Retrieval strategy (MMR for diversity) |
-| `lambda_mult` | `0.5` | MMR diversity vs. relevance trade-off |
-| `max_new_tokens` | `2098` | Max tokens in LLM response |
-
----
-
-## 📝 Notes
-
-- The vector store is **session-based** — it resets when the app is reloaded
-- Re-upload and re-process documents after each refresh
-- For large documents, increasing `chunk_size` may improve coherence
+| Parameter | Location | Default | Description |
+|---|---|---|---|
+| `chunk_size` | `load_document_chunk` | `500` | Characters per chunk |
+| `chunk_overlap` | `load_document_chunk` | `50` | Overlap between chunks |
+| `k` | `search_query` | `6` | Number of chunks returned |
+| `fetch_k` | `search_query` | `15` | Candidate pool for MMR |
+| `lambda_mult` | `search_query` | `0.5` | MMR diversity vs. relevance balance |
+| `max_new_tokens` | LLM init | `2048` | Max tokens in LLM response |
 
 ---
 
-## 🙌 Acknowledgements
+## ⚠️ Known Limitations
 
-- [LangChain](https://github.com/langchain-ai/langchain) for the RAG framework
-- [HuggingFace](https://huggingface.co/) for model hosting and embeddings
-- [Streamlit](https://streamlit.io/) for the UI framework
-- [Meta AI](https://ai.meta.com/) for the Llama 3.1 model
+- The vector store does not persist across app restarts (in-memory only)
+- Very short queries (<20 chars) are assumed to be English for language detection
+- Requires a HuggingFace account with approved access to Llama 3.1
+
+---
+
+## 📄 License
+
+MIT — feel free to use and adapt.
