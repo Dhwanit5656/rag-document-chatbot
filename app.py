@@ -34,7 +34,7 @@ if "is_ready" not in st.session_state:
 
 
 # ── Header ─────────────────────────────────────────────────────────
-st.title("🗣️ Multilingual RAG Chatbot")
+st.title("🗣️ Multilingual-MultiDoc RAG Chatbot")
 st.caption("Chat with your documents in Hindi or English")
 
 
