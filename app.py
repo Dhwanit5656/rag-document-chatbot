@@ -1,152 +1,198 @@
+# main.py
+# Streamlit UI — uses pipeline.py as backend
+
 import streamlit as st
 import os
-from dotenv import load_dotenv
-
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEmbeddings, HuggingFaceEndpoint
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_community.vectorstores import FAISS
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-from langchain_core.messages import HumanMessage, AIMessage
-
-load_dotenv()
-
-st.set_page_config(page_title="Multi-Doc RAG Assistant", page_icon="🤖")
-
-# Initialize Session States
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-if "vector_db" not in st.session_state:
-    st.session_state.vector_db = None
-
-st.title("📄 Multi-Document GPT")
-st.write("Upload multiple files and chat with all of them at once.")
-
-# -----------------------------
-# Document Processing
-# -----------------------------
-
-def process_docs(uploaded_files):
-    all_chunks = []
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-    
-    for uploaded_file in uploaded_files:
-        filepath = os.path.join("temp", uploaded_file.name)
-        os.makedirs("temp", exist_ok=True)
-        with open(filepath, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        ext = os.path.splitext(filepath)[1]
-        if ext == ".pdf": 
-            loader = PyPDFLoader(filepath)
-        elif ext == ".txt": 
-            # ADD encoding="utf-8" HERE
-            loader = TextLoader(filepath, encoding="utf-8")
-        elif ext == ".docx": 
-            loader = Docx2txtLoader(filepath)
-        else: 
-            continue
-
-        docs = loader.load()
-        all_chunks.extend(splitter.split_documents(docs))
-    
-    return all_chunks
-
-def get_vectorstore(chunks):
-    embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    # In-memory FAISS for session-based multi-doc support
-    return FAISS.from_documents(chunks, embedding_model)
-
-# -----------------------------
-# LLM & Chain Setup
-# -----------------------------
-
-llm = HuggingFaceEndpoint(
-    repo_id="meta-llama/Llama-3.1-8B-Instruct",
-    task="text-generation",
-    max_new_tokens=2098
+import tempfile
+from pipeline import (
+    load_document_chunk,
+    vector_store,
+    search_query,
+    get_answer,
+    detect_language
 )
-model = ChatHuggingFace(llm=llm)
 
-# GPT-style prompt with Memory placeholder
-contextual_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a Helpfull Assistant,Answer based on context,Nicely wrap up the Answer,If unknown, say 'Not found in Context'.\n\nContext:\n{context}"),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{question}"),
-])
+# ── Page Config ────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Multilingual RAG Chatbot",
+    page_icon="🗣️",
+    layout="wide"
+)
 
-# -----------------------------
-# Sidebar Upload
-# -----------------------------
+# ── Session State ──────────────────────────────────────────────────
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
+if "docs_loaded" not in st.session_state:
+    st.session_state.docs_loaded = []
+
+if "is_ready" not in st.session_state:
+    st.session_state.is_ready = False
+
+
+
+
+
+# ── Header ─────────────────────────────────────────────────────────
+st.title("🗣️ Multilingual RAG Chatbot")
+st.caption("Chat with your documents in Hindi or English")
+
+
+# ── Sidebar ────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Upload Center")
+    st.header("📂 Upload Documents")
+    st.caption("Supports PDF, TXT, DOCX")
+
     uploaded_files = st.file_uploader(
-        "Upload Documents", 
-        type=["pdf", "txt", "docx"], 
+        "Choose files",
+        type=["pdf", "txt", "docx"],
         accept_multiple_files=True
     )
-    
-    if st.button("Process Documents"):
-        with st.spinner("Indexing documents..."):
-            chunks = process_docs(uploaded_files)
-            st.session_state.vector_db = get_vectorstore(chunks)
-            st.success("Indexing complete!")
 
-# -----------------------------
-# Chat Interface
-# -----------------------------
+    col1, col2 = st.columns(2)
 
-# Display chat history
-for message in st.session_state.chat_history:
-    if isinstance(message, HumanMessage):
+    if col1.button("🚀 Process", type="primary", use_container_width=True):
+        if uploaded_files:
+            with st.spinner("Processing documents..."):
+
+                temp_paths = []
+                name_map = {}  # maps temp filename → original filename
+
+            for file in uploaded_files:
+                suffix = os.path.splitext(file.name)[1]
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=suffix
+                ) as tmp:
+                    tmp.write(file.read())
+                    temp_paths.append(tmp.name)
+                    # Remember: temp path → original name
+                    name_map[os.path.basename(tmp.name)] = file.name
+
+            # Run pipeline
+            chunks = load_document_chunk(temp_paths)
+
+            # Fix source names — replace temp names with original names
+            for chunk in chunks:
+                temp_source = chunk.metadata.get("source", "")
+                if temp_source in name_map:
+                    chunk.metadata["source"] = name_map[temp_source]
+
+            vector_store(chunks)
+
+            # Save file names for sidebar display
+            st.session_state.docs_loaded = [f.name for f in uploaded_files]
+            st.session_state.is_ready = True
+            st.session_state.messages = []
+
+            # Delete temp files
+            for path in temp_paths:
+                os.unlink(path)
+
+        st.success(f"✅ {len(uploaded_files)} file(s) ready!")
+    else:
+        st.warning("Please upload at least one file")
+
+    if col2.button("🗑️ Reset", use_container_width=True):
+        st.session_state.messages = []
+        st.session_state.docs_loaded = []
+        st.session_state.is_ready = False
+        st.rerun()
+
+    # Show loaded files in sidebar
+    if st.session_state.docs_loaded:
+        st.divider()
+        st.subheader("📋 Loaded Files")
+        for doc in st.session_state.docs_loaded:
+            st.caption(f"✅ {doc}")
+
+    if st.session_state.is_ready:
+        st.divider()
+        st.caption(f"💬 Messages: {len(st.session_state.messages)}")
+
+
+# ── Chat History Display ───────────────────────────────────────────
+for msg in st.session_state.messages:
+
+    if msg["role"] == "user":
         with st.chat_message("user"):
-            st.markdown(message.content)
+            st.markdown(msg["content"])
+
     else:
         with st.chat_message("assistant"):
-            st.markdown(message.content)
+            st.markdown(msg["content"])
 
-# Handle Input
-if question := st.chat_input("Ask about your documents..."):
-    if not st.session_state.vector_db:
-        st.error("Please upload and process documents first!")
-    else:
-        # 1. Add user message to history
-        st.session_state.chat_history.append(HumanMessage(content=question))
-        
-        # 2. FIX: Extract history to a local variable to avoid the AttributeError
-        # We pass this local 'history_to_pass' into the chain
-        history_to_pass = st.session_state.chat_history[:-1]
-
-        with st.chat_message("user"):
-            st.markdown(question)
-
-        # 3. RAG Chain
-        retriever = st.session_state.vector_db.as_retriever(search_kwargs={"k": 6,"k_fetch":20,"search_type":'mmr',"lambda_mult": 0.5})
-        
-        chain = (
-            RunnableParallel({
-                "context": retriever | (lambda docs: "\n\n".join(d.page_content for d in docs)),
-                "question": RunnablePassthrough(),
-                "chat_history": lambda x: history_to_pass  # Use the local variable here
-            })
-            | contextual_prompt 
-            | model 
-            | StrOutputParser()
-        )
-
-        # 4. Generate Response
-        with st.chat_message("assistant"):
-            with st.spinner("Searching..."):
-                response = chain.invoke(question)
-                st.markdown(response)
         
 
-        st.session_state.chat_history.append(AIMessage(content=response))
+            if "sources" in msg:
+                with st.expander("📄 Sources"):
+                    for meta in msg["sources"]:
+                        flag = "🇮🇳" if meta.get("language") == "hi" else "🇬🇧"
+                        st.caption(
+                            f"{flag} {meta.get('source', 'unknown')} "
+                            f"| Page: {meta.get('page', 'N/A')}"
+                        )
 
 
+# ── Chat Input ─────────────────────────────────────────────────────
+if question := st.chat_input(
+    "Ask in Hindi or English...",
+    disabled=not st.session_state.is_ready
+):
+    # Detect language
+    language = detect_language(question)
+    flag = "🇮🇳 Hindi" if language == "hi" else "🇬🇧 English"
+
+    # Show user message
+    display_question = f"{question} `{flag}`"
+    with st.chat_message("user"):
+        st.markdown(display_question)
+
+    st.session_state.messages.append({
+        "role": "user",
+        "content": display_question
+    })
+
+    # Generate response
+    with st.chat_message("assistant"):
+
+        with st.spinner("🔄 Searching..."):
+            contexts, metas = search_query(question)
+
+        with st.spinner("🤔 Thinking..."):
+            response = get_answer(question, contexts, language)
+            st.markdown(response)
+
+        
+
+        
+
+        with st.expander("📄 Sources"):
+            seen = set()
+            for meta in metas:
+                source = meta.get("source", "unknown")
+                if source not in seen:
+                    lang_flag = "🇮🇳" if meta.get("language") == "hi" else "🇬🇧"
+                    st.caption(
+                        f"{lang_flag} {source} "
+                        f"| Page: {meta.get('page', 'N/A')}"
+                    )
+                    seen.add(source)
+
+    # Save to history
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": response,
+        "sources": metas
+    })
 
 
+# ── Empty State ────────────────────────────────────────────────────
+if not st.session_state.is_ready:
+    st.markdown("---")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.info("**Step 1**\n\nUpload PDF, TXT or DOCX files in the sidebar")
+    with c2:
+        st.info("**Step 2**\n\nClick Process to embed your documents")
+    with c3:
+        st.info("**Step 3**\n\nAsk questions in Hindi or English!")
