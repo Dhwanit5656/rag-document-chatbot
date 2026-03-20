@@ -117,4 +117,4 @@ Key parameters you can tune in `pipeline.py`:
 
 ## 📄 License
 
-MIT — feel free to use and adapt.
+Apache-2.0 license — feel free to use and adapt.
