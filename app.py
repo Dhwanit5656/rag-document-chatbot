@@ -14,7 +14,7 @@ from pipeline import (
 
 # ── Page Config ────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Multilingual RAG Chatbot",
+    page_title="Multilingual-MultiDoc RAG Chatbot",
     page_icon="🗣️",
     layout="wide"
 )
